@@ -26,7 +26,7 @@ public class App {
         public void configure() throws Exception {
 
             restConfiguration()
-                    .port(8080)
+                    .port(8181)
                     .bindingMode(RestBindingMode.json)
                     .enableCORS(true);
 
