@@ -25,6 +25,8 @@ public class App {
 
         public void configure() throws Exception {
 
+            LocalCache postsCache = new LocalCache();
+
             restConfiguration()
                     .port(8181)
                     .bindingMode(RestBindingMode.json)
@@ -33,8 +35,13 @@ public class App {
             rest().get("/posts")
                     .produces("application/json")
                     .route()
-                    .to("facebook:getPosts?userId={{fb-page}}&oAuthAppId={{fb-app-id}}&oAuthAppSecret={{fb-app-secret}}&oAuthAccessToken={{fb-access-token}}")
-                    .bean(App.class, "map");
+                    .setBody().method(postsCache, "get");
+
+
+            from("timer:clock?period=300000&delay=0")
+                    .to("facebook:getPosts?reading.limit=60&reading.fields=message,created_time,id,link,full_picture,type,likes.limit(1).summary(true)&userId={{fb-page}}&oAuthAppId={{fb-app-id}}&oAuthAppSecret={{fb-app-secret}}&oAuthAccessToken={{fb-access-token}}")
+                    .bean(App.class, "map")
+                    .bean(postsCache, "save");
 
         }
     }
@@ -44,13 +51,18 @@ public class App {
         if (posts != null) {
             for(int i=0; i< posts.size(); i++) {
                 Post p = posts.get(i);
+                if (!"photo".equals(p.getType())) {
+                    continue;
+                }
+
                 PagePost pp = new PagePost();
                 pagePosts.add(pp);
 
                 pp.setMessage(p.getMessage());
-                pp.setPicture(p.getPicture() != null ? p.getPicture().toString() : null);
-                pp.setLikes(p.getLikes() != null ? p.getLikes().size() : null);
+                pp.setPicture(p.getFullPicture() != null ? p.getFullPicture().toString() : null);
+                pp.setLikes(p.getLikes() != null && p.getLikes().getSummary() != null ? p.getLikes().getSummary().getTotalCount() : null);
                 pp.setLink(p.getLink() != null ? p.getLink().toString() : null);
+                pp.setDate(p.getCreatedTime());
             }
         }
         return pagePosts;
