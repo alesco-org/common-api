@@ -28,17 +28,23 @@ public class App {
             LocalCache postsCache = new LocalCache();
 
             restConfiguration()
-                    .port(8181)
+                    .port(8080)
                     .bindingMode(RestBindingMode.json)
                     .enableCORS(true);
 
             rest().get("/posts")
                     .produces("application/json")
                     .route()
+                    .log("Requested posts from page")
                     .setBody().method(postsCache, "get");
 
+            rest().get("/health")
+                    .produces("text/plain")
+                    .route()
+                    .transform().constant("OK");
 
             from("timer:clock?period=300000&delay=0")
+                    .log("Retrieving new data from Facebook")
                     .to("facebook:getPosts?reading.limit=60&reading.fields=message,created_time,id,link,full_picture,type,likes.limit(1).summary(true)&userId={{fb-page}}&oAuthAppId={{fb-app-id}}&oAuthAppSecret={{fb-app-secret}}&oAuthAccessToken={{fb-access-token}}")
                     .bean(App.class, "map")
                     .bean(postsCache, "save");

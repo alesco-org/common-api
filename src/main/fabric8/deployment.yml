@@ -1,0 +1,37 @@
+spec:
+  template:
+    spec:
+      containers:
+      - env:
+        - name: FB_PAGE
+          valueFrom:
+            secretKeyRef:
+              name: facebook-config
+              key: fb-page
+        - name: FB_APP_ID
+          valueFrom:
+            secretKeyRef:
+              name: facebook-config
+              key: fb-app-id
+        - name: FB_APP_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: facebook-config
+              key: fb-app-secret
+        - name: FB_ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: facebook-config
+              key: fb-access-token
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 180
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 10
