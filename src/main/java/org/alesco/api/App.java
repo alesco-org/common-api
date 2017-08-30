@@ -38,6 +38,28 @@ public class App {
                     .log("Requested posts from page")
                     .setBody().method(postsCache, "get");
 
+            rest().post("/message")
+                    .param().name("Message-Name").dataType("String").required(true).endParam()
+                    .param().name("Message-Mail").dataType("String").required(true).endParam()
+                    .param().name("Message-Subject").dataType("String").required(true).endParam()
+                    .param().name("Message-Text").dataType("String").required(true).endParam()
+                    .param().name("Message-Phone").dataType("String").required(false).endParam()
+                    .produces("text/plain")
+                    .bindingMode(RestBindingMode.off)
+                    .route()
+                    .validate(header("Message-Name").isNotNull())
+                    .validate(header("Message-Mail").isNotNull())
+                    .validate(header("Message-Subject").isNotNull())
+                    .validate(header("Message-Text").isNotNull())
+                    .log("Received message from user")
+                    .to("log:org.alesco?level=INFO&showHeaders=true")
+                    .multicast()
+                        .to("direct:send-mail-to-company")
+                        .to("direct:send-mail-to-user")
+                    .end()
+                    .setBody().constant("Messages sent")
+                    .log("Messages sent");
+
             rest().get("/health")
                     .produces("text/plain")
                     .route()
@@ -48,6 +70,25 @@ public class App {
                     .to("facebook:getPosts?reading.limit=60&reading.fields=message,created_time,id,link,full_picture,type,likes.limit(1).summary(true)&userId={{fb-page}}&oAuthAppId={{fb-app-id}}&oAuthAppSecret={{fb-app-secret}}&oAuthAccessToken={{fb-access-token}}")
                     .bean(App.class, "map")
                     .bean(postsCache, "save");
+
+            from("direct:send-mail-to-company")
+                    .removeHeaders("*", "Message-*")
+                    .setBody().simple("{{mail-company-template}}")
+                    .setHeader("From", simple("{{mail-company-from}}"))
+                    .setHeader("To", simple("{{mail-company-recipient}}"))
+                    .setHeader("Reply-To", header("Message-Mail"))
+                    .setHeader("Subject", header("Message-Subject"))
+                    .removeHeaders("Message-*")
+                    .to("smtps://{{mail-server}}?username={{mail-user}}&password={{mail-pass}}");
+
+            from("direct:send-mail-to-user")
+                    .removeHeaders("*", "Message-*")
+                    .setBody().simple("{{mail-user-template}}")
+                    .setHeader("From", simple("{{mail-user-from}}"))
+                    .setHeader("To", header("Message-Mail"))
+                    .setHeader("Subject", header("Message-Subject"))
+                    .removeHeaders("Message-*")
+                    .to("smtps://{{mail-server}}?username={{mail-user}}&password={{mail-pass}}");
 
         }
     }
