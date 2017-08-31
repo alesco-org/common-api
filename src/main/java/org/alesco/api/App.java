@@ -28,7 +28,7 @@ public class App {
             LocalCache postsCache = new LocalCache();
 
             restConfiguration()
-                    .port(8080)
+                    .port(8181)
                     .bindingMode(RestBindingMode.json)
                     .enableCORS(true);
 
