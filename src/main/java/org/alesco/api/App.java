@@ -53,12 +53,11 @@ public class App {
                     .validate(header("Message-Text").isNotNull())
                     .log("Received message from user")
                     .to("log:org.alesco?level=INFO&showHeaders=true")
-                    .multicast()
-                        .to("direct:send-mail-to-company")
-                        .to("direct:send-mail-to-user")
-                    .end()
-                    .setBody().constant("Messages sent")
-                    .log("Messages sent");
+                    .to("seda:send-mail?waitForTaskToComplete=Never")
+                    .setBody().constant("Messages enqueued")
+                    .removeHeaders("*")
+                    .setHeader("Access-Control-Allow-Origin", constant("*"))
+                    .setHeader("Content-Type", constant("text/plain"));
 
             rest().get("/health")
                     .produces("text/plain")
@@ -71,13 +70,20 @@ public class App {
                     .bean(App.class, "map")
                     .bean(postsCache, "save");
 
+            from("seda:send-mail")
+                    .multicast()
+                        .to("direct:send-mail-to-company")
+                        .to("direct:send-mail-to-user")
+                    .end()
+                    .log("Mail effectively sent");
+
             from("direct:send-mail-to-company")
                     .removeHeaders("*", "Message-*")
                     .setBody().simple("{{mail-company-template}}")
                     .setHeader("From", simple("{{mail-company-from}}"))
                     .setHeader("To", simple("{{mail-company-recipient}}"))
                     .setHeader("Reply-To", header("Message-Mail"))
-                    .setHeader("Subject", header("Message-Subject"))
+                    .setHeader("Subject", simple("{{mail-subject-template}}"))
                     .removeHeaders("Message-*")
                     .to("smtps://{{mail-server}}?username={{mail-user}}&password={{mail-pass}}");
 
@@ -86,7 +92,7 @@ public class App {
                     .setBody().simple("{{mail-user-template}}")
                     .setHeader("From", simple("{{mail-user-from}}"))
                     .setHeader("To", header("Message-Mail"))
-                    .setHeader("Subject", header("Message-Subject"))
+                    .setHeader("Subject", simple("{{mail-subject-template}}"))
                     .removeHeaders("Message-*")
                     .to("smtps://{{mail-server}}?username={{mail-user}}&password={{mail-pass}}");
 
