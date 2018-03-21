@@ -85,6 +85,7 @@ public class App {
                     .setHeader("Reply-To", header("Message-Mail"))
                     .setHeader("Subject", simple("{{mail-subject-template}}"))
                     .removeHeaders("Message-*")
+                    .to("log:org.alesco.mail.company?level=INFO&showHeaders=true")
                     .to("smtps://{{mail-server}}?username={{mail-user}}&password={{mail-pass}}");
 
             from("direct:send-mail-to-user")
@@ -94,6 +95,7 @@ public class App {
                     .setHeader("To", header("Message-Mail"))
                     .setHeader("Subject", simple("{{mail-subject-template}}"))
                     .removeHeaders("Message-*")
+                    .to("log:org.alesco.mail.user?level=INFO&showHeaders=true")
                     .to("smtps://{{mail-server}}?username={{mail-user}}&password={{mail-pass}}");
 
         }
