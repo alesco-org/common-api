@@ -8,6 +8,10 @@ import org.apache.camel.model.rest.RestBindingMode;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.stereotype.Component;
+import org.apache.camel.component.netty.http.NettyHttpComponent;
+import org.apache.camel.spi.ComponentCustomizer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Lazy;
 
 import facebook4j.PagableList;
 import facebook4j.Post;
@@ -18,6 +22,23 @@ public class App {
 
     public static void main(String[] args) {
         SpringApplication.run(App.class, args);
+    }
+
+    @Lazy
+    @Bean
+    public ComponentCustomizer configureCustomNettyHttpComponent() {
+        return new ComponentCustomizer() {
+            @Override
+            public void configure(String name, org.apache.camel.Component target) {
+                NettyHttpComponent c = (NettyHttpComponent) target;
+                c.getConfiguration().setUrlDecodeHeaders(true);
+            }
+            
+            @Override
+            public boolean isEnabled(String name, org.apache.camel.Component target) {
+                return target instanceof NettyHttpComponent;
+            }
+        };
     }
 
     @Component
