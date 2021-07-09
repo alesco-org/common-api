@@ -66,7 +66,7 @@ public class App {
 
             from("timer:clock?period=300000&delay=0")
                     .log("Retrieving new data from Facebook")
-                    .to("facebook:getPosts?reading.limit=60&reading.fields=message,created_time,id,link,full_picture,type,likes.limit(1).summary(true)&userId={{fb-page}}&oAuthAppId={{fb-app-id}}&oAuthAppSecret={{fb-app-secret}}&oAuthAccessToken={{fb-access-token}}")
+                    .to("facebook:getPosts?reading.limit=60&reading.fields=message,created_time,id,permalink_url,full_picture,likes.limit(1).summary(true)&userId={{fb-page}}&oAuthAppId={{fb-app-id}}&oAuthAppSecret={{fb-app-secret}}&oAuthAccessToken={{fb-access-token}}")
                     .bean(App.class, "map")
                     .bean(postsCache, "save");
 
@@ -106,7 +106,7 @@ public class App {
         if (posts != null) {
             for(int i=0; i< posts.size(); i++) {
                 Post p = posts.get(i);
-                if (!"photo".equals(p.getType())) {
+                if (p.getFullPicture() == null) {
                     continue;
                 }
 
@@ -114,9 +114,9 @@ public class App {
                 pagePosts.add(pp);
 
                 pp.setMessage(p.getMessage());
-                pp.setPicture(p.getFullPicture() != null ? p.getFullPicture().toString() : null);
+                pp.setPicture(p.getFullPicture().toString());
                 pp.setLikes(p.getLikes() != null && p.getLikes().getSummary() != null ? p.getLikes().getSummary().getTotalCount() : null);
-                pp.setLink(p.getLink() != null ? p.getLink().toString() : null);
+                pp.setLink(p.getPermalinkUrl() != null ? p.getPermalinkUrl().toString() : null);
                 pp.setDate(p.getCreatedTime());
             }
         }

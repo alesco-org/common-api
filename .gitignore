@@ -4,3 +4,5 @@
 .medatata
 target
 facebook-config-secret.yml
+.vscode
+.envrc

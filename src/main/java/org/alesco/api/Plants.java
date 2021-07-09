@@ -4,7 +4,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.stereotype.Component;
 
-@Component
+//@Component
 public class Plants extends RouteBuilder {
 
     @Override
@@ -12,7 +12,7 @@ public class Plants extends RouteBuilder {
 
         LocalCache plantsStatus = new LocalCache(false);
 
-        from("quartz2://water?cron={{plants.water.cron}}")
+        from("quartz://water?cron={{plants.water.cron}}")
                 .log("Setting plants water status (true)")
                 .setBody(constant(true))
                 .bean(plantsStatus, "save");
@@ -22,7 +22,7 @@ public class Plants extends RouteBuilder {
                     .when(method(plantsStatus, "get").isEqualTo(true))
                         .setHeader(Exchange.HTTP_METHOD, constant("POST"))
                         .log("Calling webhook to trigger plants water notification")
-                        .to("netty4-http:{{plants.webhook}}")
+                        .to("netty-http:{{plants.webhook}}")
                 .end();
 
         rest().post("/plants/reset")
