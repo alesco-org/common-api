@@ -53,12 +53,6 @@ public class App {
                     .bindingMode(RestBindingMode.json)
                     .enableCORS(true);
 
-            rest().get("/posts")
-                    .produces("application/json")
-                    .route()
-                    .log("Requested posts from page")
-                    .setBody().method(postsCache, "get");
-
             rest().post("/message")
                     .param().name("Message-Name").dataType("String").required(true).endParam()
                     .param().name("Message-Mail").dataType("String").required(true).endParam()
@@ -85,12 +79,19 @@ public class App {
                     .route()
                     .transform().constant("OK");
 
+            /*
             from("timer:clock?period=300000&delay=0")
                     .log("Retrieving new data from Facebook")
                     .to("facebook:getPosts?reading.limit=60&reading.fields=message,created_time,id,permalink_url,full_picture,likes.limit(1).summary(true)&userId={{fb-page}}&oAuthAppId={{fb-app-id}}&oAuthAppSecret={{fb-app-secret}}&oAuthAccessToken={{fb-access-token}}")
                     .bean(App.class, "map")
                     .bean(postsCache, "save");
 
+            rest().get("/posts")
+                .produces("application/json")
+                .route()
+                .log("Requested posts from page")
+                .setBody().method(postsCache, "get");
+            */
             from("seda:send-mail")
                     .multicast()
                         .to("direct:send-mail-to-company")
@@ -107,7 +108,7 @@ public class App {
                     .setHeader("Subject", simple("{{mail-subject-template}}"))
                     .removeHeaders("Message-*")
                     .to("log:org.alesco.mail.company?level=INFO&showHeaders=true")
-                    .to("smtps://{{mail-server}}?username={{mail-user}}&password={{mail-pass}}");
+                    .to("smtp://{{mail-server}}?username={{mail-user}}&password={{mail-pass}}&mail.smtp.starttls.enable=true&mail.smtp.auth=true");
 
             from("direct:send-mail-to-user")
                     .removeHeaders("*", "Message-*")
@@ -117,7 +118,7 @@ public class App {
                     .setHeader("Subject", simple("{{mail-subject-template}}"))
                     .removeHeaders("Message-*")
                     .to("log:org.alesco.mail.user?level=INFO&showHeaders=true")
-                    .to("smtps://{{mail-server}}?username={{mail-user}}&password={{mail-pass}}");
+                    .to("smtp://{{mail-server}}?username={{mail-user}}&password={{mail-pass}}&mail.smtp.starttls.enable=true&mail.smtp.auth=true");
 
         }
     }

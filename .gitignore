@@ -6,3 +6,5 @@ target
 facebook-config-secret.yml
 .vscode
 .envrc
+
+/application.properties
